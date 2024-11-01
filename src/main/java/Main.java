@@ -8,9 +8,6 @@ import exceptions.ValidationException;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * Main class that implements the console interface
- */
 public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static SocialNetworkService service;
@@ -41,6 +38,7 @@ public class Main {
     private static void handleOption(String option) {
         try {
             switch (option) {
+                case "0" -> debug();
                 case "1" -> addUser();
                 case "2" -> removeUser();
                 case "3" -> addFriendship();
@@ -55,6 +53,12 @@ public class Main {
             }
         } catch (ValidationException e) {
             System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    private static void debug() {
+        for (User user : service.getAllUsers()) {
+            System.out.println(user);
         }
     }
 

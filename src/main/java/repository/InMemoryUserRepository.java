@@ -3,42 +3,61 @@ package repository;
 import domain.User;
 import exceptions.ValidationException;
 import validator.Validator;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * In-memory implementation of the user repository
  */
 public class InMemoryUserRepository implements Repository<String, User> {
-    private final List<User> users;
+    private final Map<String, User> users;
     private final Validator<User> validator;
 
     public InMemoryUserRepository(Validator<User> validator) {
-        this.users = new ArrayList<>();
+        this.users = new HashMap<>();
         this.validator = validator;
     }
 
     @Override
-    public void add(User user) throws ValidationException {
-        validator.validate(user);
-        users.add(user);
+    public Optional<User> findOne(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException("id must not be null");
+        }
+        return Optional.ofNullable(users.get(id));
     }
 
     @Override
-    public void remove(String id) {
-        users.removeIf(user -> user.getId().equals(id));
+    public Iterable<User> findAll() {
+        return new ArrayList<>(users.values());
     }
 
     @Override
-    public Optional<User> findById(String id) {
-        return users.stream()
-                .filter(user -> user.getId().equals(id))
-                .findFirst();
+    public Optional<User> save(User entity) throws ValidationException {
+        if (entity == null) {
+            throw new IllegalArgumentException("entity must not be null");
+        }
+        validator.validate(entity);
+        return Optional.ofNullable(users.putIfAbsent(entity.getId(), entity));
     }
 
     @Override
-    public List<User> findAll() {
-        return new ArrayList<>(users);
+    public Optional<User> delete(String id) {
+        if (id == null) {
+            throw new IllegalArgumentException("id must not be null");
+        }
+        return Optional.ofNullable(users.remove(id));
+    }
+
+    @Override
+    public Optional<User> update(User entity) throws ValidationException {
+        if (entity == null) {
+            throw new IllegalArgumentException("entity must not be null");
+        }
+        validator.validate(entity);
+        
+        if (users.containsKey(entity.getId())) {
+            users.put(entity.getId(), entity);
+            return Optional.empty();
+        }
+        return Optional.of(entity);
     }
 }

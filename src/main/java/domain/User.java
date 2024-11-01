@@ -7,20 +7,18 @@ import java.util.Objects;
 /**
  * Represents a user in the social network
  */
-public class User {
-    private final String id;
+public class User extends Entity<String> {
     private String firstName;
     private String lastName;
     private List<User> friends;
 
     public User(String id, String firstName, String lastName) {
-        this.id = id;
+        super(id);
         this.firstName = firstName;
         this.lastName = lastName;
         this.friends = new ArrayList<>();
     }
 
-    public String getId() { return id; }
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public String getLastName() { return lastName; }
@@ -32,18 +30,18 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(id, user.id);
+        return Objects.equals(getId(), user.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(getId());
     }
 
     @Override
     public String toString() {
         return "User{" +
-                "id='" + id + '\'' +
+                "id='" + getId() + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 '}';

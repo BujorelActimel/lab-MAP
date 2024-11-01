@@ -5,6 +5,8 @@ import domain.Friendship;
 import repository.Repository;
 import exceptions.ValidationException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Service class that implements the business logic
@@ -19,40 +21,38 @@ public class SocialNetworkService {
     }
 
     public void addUser(User user) throws ValidationException {
-        userRepository.add(user);
+        userRepository.save(user)
+                .ifPresent(u -> {
+                    throw new IllegalArgumentException("User already exists!");
+                });
     }
 
     public void removeUser(String userId) {
-        userRepository.remove(userId);
+        userRepository.delete(userId);
         friendships.removeIf(friendship -> 
             friendship.getUser1().getId().equals(userId) ||
             friendship.getUser2().getId().equals(userId));
     }
 
     public void addFriendship(String userId1, String userId2) throws ValidationException {
-        Optional<User> user1 = userRepository.findById(userId1);
-        Optional<User> user2 = userRepository.findById(userId2);
+        User user1 = userRepository.findOne(userId1)
+                .orElseThrow(() -> new ValidationException("First user doesn't exist!"));
+        User user2 = userRepository.findOne(userId2)
+                .orElseThrow(() -> new ValidationException("Second user doesn't exist!"));
 
-        if (user1.isEmpty() || user2.isEmpty()) {
-            throw new ValidationException("One or both users don't exist!");
-        }
-
-        User u1 = user1.get();
-        User u2 = user2.get();
-
-        if (u1.getFriends().contains(u2)) {
+        if (user1.getFriends().contains(user2)) {
             throw new ValidationException("Users are already friends!");
         }
 
-        u1.getFriends().add(u2);
-        u2.getFriends().add(u1);
+        user1.getFriends().add(user2);
+        user2.getFriends().add(user1);
 
-        friendships.add(new Friendship(UUID.randomUUID().toString(), u1, u2));
+        friendships.add(new Friendship(UUID.randomUUID().toString(), user1, user2));
     }
 
     public void removeFriendship(String userId1, String userId2) {
-        Optional<User> user1 = userRepository.findById(userId1);
-        Optional<User> user2 = userRepository.findById(userId2);
+        Optional<User> user1 = userRepository.findOne(userId1);
+        Optional<User> user2 = userRepository.findOne(userId2);
 
         if (user1.isPresent() && user2.isPresent()) {
             User u1 = user1.get();
@@ -85,8 +85,11 @@ public class SocialNetworkService {
         List<User> mostSociable = new ArrayList<>();
         int maxPathLength = -1;
 
-        for (User startUser : userRepository.findAll()) {
-            List<User> currentCommunity = new ArrayList<>();
+        // Convert Iterable to List using StreamSupport
+        List<User> allUsers = StreamSupport.stream(userRepository.findAll().spliterator(), false)
+                .collect(Collectors.toList());
+
+        for (User startUser : allUsers) {
             Set<User> visited = new HashSet<>();
             int[] maxLength = {0};
 
@@ -94,10 +97,9 @@ public class SocialNetworkService {
 
             if (maxLength[0] > maxPathLength) {
                 maxPathLength = maxLength[0];
-                currentCommunity.clear();
-                dfs(startUser, new HashSet<>());
-                currentCommunity.addAll(visited);
-                mostSociable = currentCommunity;
+                Set<User> communityVisited = new HashSet<>();
+                dfs(startUser, communityVisited);
+                mostSociable = new ArrayList<>(communityVisited);
             }
         }
 
@@ -122,5 +124,13 @@ public class SocialNetworkService {
                 dfsWithPath(friend, visited, currentLength + 1, maxLength);
             }
         }
+    }
+
+    public Iterable<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public List<Friendship> getAllFriendships() {
+        return new ArrayList<>(friendships);
     }
 }
