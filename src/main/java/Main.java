@@ -1,5 +1,5 @@
 import domain.User;
-import repository.FileUserRepository;
+import repository.DatabaseUserRepository;
 import repository.Repository;
 import service.SocialNetworkService;
 import validator.UserValidator;
@@ -13,7 +13,7 @@ public class Main {
     private static SocialNetworkService service;
 
     public static void main(String[] args) {
-        Repository<String, User> repository = new FileUserRepository("src/main/resources/users.txt", new UserValidator());
+        Repository<String, User> repository = new DatabaseUserRepository("social-network.db", new UserValidator());
         service = new SocialNetworkService(repository);
 
         while (true) {
