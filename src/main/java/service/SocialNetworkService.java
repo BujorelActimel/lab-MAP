@@ -79,45 +79,63 @@ public class SocialNetworkService {
     }
 
     public List<User> getMostSociableCommunity() {
-        List<User> mostSociable = new ArrayList<>();
-        int maxPathLength = -1;
-
         List<User> allUsers = StreamSupport.stream(userRepository.findAll().spliterator(), false)
                 .collect(Collectors.toList());
+        
+        // Map to store communities
+        Map<User, Set<User>> communities = new HashMap<>();
+        Set<User> visited = new HashSet<>();
 
-        for (User startUser : allUsers) {
-            Set<User> visited = new HashSet<>();
-            int[] maxLength = {0};
-
-            dfsWithPath(startUser, visited, 0, maxLength);
-
-            if (maxLength[0] > maxPathLength) {
-                maxPathLength = maxLength[0];
-                Set<User> communityVisited = new HashSet<>();
-                dfs(startUser, communityVisited);
-                mostSociable = new ArrayList<>(communityVisited);
+        // Find all communities
+        for (User user : allUsers) {
+            if (!visited.contains(user)) {
+                Set<User> community = new HashSet<>();
+                dfs(user, community);
+                visited.addAll(community);
+                communities.put(user, community);
             }
         }
 
-        return mostSociable;
-    }
+        // Find the most sociable community
+        int maxSocialScore = -1;
+        Set<User> mostSociableCommunity = new HashSet<>();
 
-    private void dfs(User user, Set<User> visited) {
-        visited.add(user);
-        for (User friend : user.getFriends()) {
-            if (!visited.contains(friend)) {
-                dfs(friend, visited);
+        for (Map.Entry<User, Set<User>> entry : communities.entrySet()) {
+            Set<User> community = entry.getValue();
+            if (community.size() < 2) continue; // Skip isolated users
+
+            // Calculate social score based on number of friendships within community
+            int socialScore = calculateCommunityScore(community);
+            
+            if (socialScore > maxSocialScore) {
+                maxSocialScore = socialScore;
+                mostSociableCommunity = community;
             }
         }
+
+        return new ArrayList<>(mostSociableCommunity);
     }
 
-    private void dfsWithPath(User user, Set<User> visited, int currentLength, int[] maxLength) {
-        visited.add(user);
-        maxLength[0] = Math.max(maxLength[0], currentLength);
+    private int calculateCommunityScore(Set<User> community) {
+        int totalConnections = 0;
+        
+        for (User user : community) {
+            for (User friend : user.getFriends()) {
+                if (community.contains(friend)) {
+                    totalConnections++;
+                }
+            }
+        }
+        
+        // Each connection is counted twice (once for each user), so divide by 2
+        return totalConnections / 2;
+    }
 
+    private void dfs(User user, Set<User> community) {
+        community.add(user);
         for (User friend : user.getFriends()) {
-            if (!visited.contains(friend)) {
-                dfsWithPath(friend, visited, currentLength + 1, maxLength);
+            if (!community.contains(friend)) {
+                dfs(friend, community);
             }
         }
     }

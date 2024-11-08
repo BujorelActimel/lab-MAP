@@ -96,36 +96,7 @@ public class DatabaseUserRepository implements Repository<String, User> {
             }
         }
 
-        // Adăugăm și niște prietenii inițiale pentru a avea un graf interesant
-        String[][] initialFriendships = {
-            {"1", "2"},  // John - Jane
-            {"2", "3"},  // Jane - Michael
-            {"3", "4"},  // Michael - Sarah
-            {"4", "5"},  // Sarah - David
-            {"6", "7"},  // Emily - James
-            {"7", "8"},  // James - Emma
-            {"8", "9"},  // Emma - Robert
-            {"10", "11"}, // Olivia - Ion
-            {"11", "12"}, // Ion - Maria
-            {"13", "14"}, // Alex - Elena
-            {"15", "16"}, // Andrei - Ana
-            {"17", "18"}, // George - Laura
-            {"19", "20"}, // Daniel - Diana
-            {"20", "21"}  // Diana - Mihai
-        };
-
-        String insertFriendshipSQL = "INSERT INTO friendships (id, user1_id, user2_id) VALUES (?, ?, ?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(insertFriendshipSQL)) {
-            for (String[] friendship : initialFriendships) {
-                String friendshipId = java.util.UUID.randomUUID().toString();
-                pstmt.setString(1, friendshipId);
-                pstmt.setString(2, friendship[0]);
-                pstmt.setString(3, friendship[1]);
-                pstmt.executeUpdate();
-            }
-        }
-
-        System.out.println("Baza de date a fost populată cu succes cu datele inițiale!");
+        System.out.println("Database has been populated with initial data successfully!");
     }
 
     @Override
