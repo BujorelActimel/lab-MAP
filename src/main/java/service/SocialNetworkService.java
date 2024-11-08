@@ -2,22 +2,18 @@ package service;
 
 import domain.User;
 import domain.Friendship;
+import repository.DatabaseUserRepository;
 import repository.Repository;
 import exceptions.ValidationException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-/**
- * Service class that implements the business logic
- */
 public class SocialNetworkService {
     private final Repository<String, User> userRepository;
-    private final List<Friendship> friendships;
 
     public SocialNetworkService(Repository<String, User> userRepository) {
         this.userRepository = userRepository;
-        this.friendships = new ArrayList<>();
     }
 
     public void addUser(User user) throws ValidationException {
@@ -29,9 +25,6 @@ public class SocialNetworkService {
 
     public void removeUser(String userId) {
         userRepository.delete(userId);
-        friendships.removeIf(friendship -> 
-            friendship.getUser1().getId().equals(userId) ||
-            friendship.getUser2().getId().equals(userId));
     }
 
     public void addFriendship(String userId1, String userId2) throws ValidationException {
@@ -44,10 +37,14 @@ public class SocialNetworkService {
             throw new ValidationException("Users are already friends!");
         }
 
+        String friendshipId = UUID.randomUUID().toString();
+        
+        if (userRepository instanceof DatabaseUserRepository dbRepo) {
+            dbRepo.saveFriendship(friendshipId, userId1, userId2);
+        }
+
         user1.getFriends().add(user2);
         user2.getFriends().add(user1);
-
-        friendships.add(new Friendship(UUID.randomUUID().toString(), user1, user2));
     }
 
     public void removeFriendship(String userId1, String userId2) {
@@ -58,12 +55,12 @@ public class SocialNetworkService {
             User u1 = user1.get();
             User u2 = user2.get();
 
+            if (userRepository instanceof DatabaseUserRepository dbRepo) {
+                dbRepo.deleteFriendship(userId1, userId2);
+            }
+
             u1.getFriends().remove(u2);
             u2.getFriends().remove(u1);
-
-            friendships.removeIf(friendship ->
-                (friendship.getUser1().equals(u1) && friendship.getUser2().equals(u2)) ||
-                (friendship.getUser1().equals(u2) && friendship.getUser2().equals(u1)));
         }
     }
 
@@ -85,7 +82,6 @@ public class SocialNetworkService {
         List<User> mostSociable = new ArrayList<>();
         int maxPathLength = -1;
 
-        // Convert Iterable to List using StreamSupport
         List<User> allUsers = StreamSupport.stream(userRepository.findAll().spliterator(), false)
                 .collect(Collectors.toList());
 
@@ -128,9 +124,5 @@ public class SocialNetworkService {
 
     public Iterable<User> getAllUsers() {
         return userRepository.findAll();
-    }
-
-    public List<Friendship> getAllFriendships() {
-        return new ArrayList<>(friendships);
     }
 }
